@@ -12,8 +12,19 @@ const SECRET = 'sua_chave_secreta_supersegura'; // Troque para uma chave forte e
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = '123456';
 
+const allowedOrigins = [
+  'https://luminus-service-digital.vercel.app',
+  'http://luminus-service-digital.vercel.app',
+  'luminus-service-digital.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 // Middlewares
-app.use(cors());
 app.use(bodyParser.json());
 
 // Middleware para proteger rotas
