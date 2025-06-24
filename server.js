@@ -62,24 +62,30 @@ const siteDataSchema = new mongoose.Schema({
 });
 const SiteData = mongoose.model('SiteData', siteDataSchema);
 
-// Middleware para garantir que sempre exista um documento de dados do site
-async function ensureSiteData() {
-  let doc = await SiteData.findOne();
-  if (!doc) {
-    doc = await SiteData.create({});
+// Após conectar ao MongoDB, garantir que o documento principal de dados do site exista
+mongoose.connection.once('open', async () => {
+  try {
+    let doc = await SiteData.findOne();
+    if (!doc) {
+      await SiteData.create({});
+      console.log('Documento principal de dados do site criado automaticamente.');
+    } else {
+      console.log('Documento principal de dados do site já existe.');
+    }
+  } catch (e) {
+    console.error('Erro ao garantir documento principal do site:', e);
   }
-  return doc;
-}
+});
 
 // GET todas as seções
 app.get('/api', async (req, res) => {
-  const doc = await ensureSiteData();
+  const doc = await SiteData.findOne();
   res.json(doc);
 });
 
 // PUT todas as seções
 app.put('/api', async (req, res) => {
-  let doc = await ensureSiteData();
+  let doc = await SiteData.findOne();
   Object.assign(doc, req.body);
   await doc.save();
   res.json({ success: true });
@@ -87,7 +93,7 @@ app.put('/api', async (req, res) => {
 
 // GET seção específica
 app.get('/api/:section', async (req, res) => {
-  const doc = await ensureSiteData();
+  const doc = await SiteData.findOne();
   const section = req.params.section;
   if (doc[section] !== undefined) {
     res.json(doc[section]);
@@ -98,7 +104,7 @@ app.get('/api/:section', async (req, res) => {
 
 // PUT seção específica
 app.put('/api/:section', async (req, res) => {
-  let doc = await ensureSiteData();
+  let doc = await SiteData.findOne();
   const section = req.params.section;
   if (doc[section] !== undefined) {
     doc[section] = req.body;
