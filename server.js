@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { Low, JSONFile } = require('lowdb');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
@@ -33,75 +31,6 @@ function authMiddleware(req, res, next) {
 
 app.use(authMiddleware);
 
-// Configuração do banco de dados (arquivo JSON)
-const file = path.join(__dirname, 'db.json');
-const adapter = new JSONFile(file);
-const db = new Low(adapter);
-
-// Dados padrão
-const defaultData = {
-  header: { logo: '', titulo: '', links: [{ label: '', url: '' }] },
-  hero: { title: '', subtitle: '', stats: [{ number: '', label: '' }] },
-  sobre: { title: '', paragraphs: [''], features: [{ title: '', description: '' }] },
-  servicos: [{ title: '', description: '', features: [''] }],
-  projetos: [{ title: '', description: '', image: '', tags: [''], metrics: [{ key: '', value: '' }] }],
-  depoimentos: [{ name: '', position: '', company: '', content: '', rating: 5, avatar: '' }],
-  footer: {
-    text: '',
-    contacts: [ { type: 'email', value: '' }, { type: 'phone', value: '' }, { type: 'address', value: '' } ],
-    socials: [{ name: '', href: '' }],
-    services: [''],
-    companyLinks: ['']
-  }
-};
-
-// Inicializar o banco de dados
-async function initDB() {
-  await db.read();
-  db.data = db.data || defaultData;
-  await db.write();
-}
-
-initDB();
-
-// Rotas GET para cada seção
-app.get('/api/:section', async (req, res) => {
-  await db.read();
-  const section = req.params.section;
-  if (db.data[section] !== undefined) {
-    res.json(db.data[section]);
-  } else {
-    res.status(404).json({ error: 'Seção não encontrada' });
-  }
-});
-
-// Rotas PUT para atualizar cada seção
-app.put('/api/:section', async (req, res) => {
-  await db.read();
-  const section = req.params.section;
-  if (db.data[section] !== undefined) {
-    db.data[section] = req.body;
-    await db.write();
-    res.json({ success: true });
-  } else {
-    res.status(404).json({ error: 'Seção não encontrada' });
-  }
-});
-
-// Rota para obter todas as seções de uma vez
-app.get('/api', async (req, res) => {
-  await db.read();
-  res.json(db.data);
-});
-
-// Rota para atualizar todas as seções de uma vez
-app.put('/api', async (req, res) => {
-  await db.read();
-  db.data = { ...db.data, ...req.body };
-  await db.write();
-  res.json({ success: true });
-});
-
 // Conexão com MongoDB Railway
 mongoose.connect('mongodb://mongo:SVzgKbblZZglrtBqcIvOaxUkXdGoakEj@metro.proxy.rlwy.net:15495/admins', {
   useNewUrlParser: true,
@@ -114,6 +43,71 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'admin' }
 });
 const User = mongoose.model('User', userSchema);
+
+// Modelo para dados do site
+const siteDataSchema = new mongoose.Schema({
+  header: { logo: String, titulo: String, links: [{ label: String, url: String }] },
+  hero: { title: String, subtitle: String, stats: [{ number: String, label: String }] },
+  sobre: { title: String, paragraphs: [String], features: [{ title: String, description: String }] },
+  servicos: [{ title: String, description: String, features: [String] }],
+  projetos: [{ title: String, description: String, image: String, tags: [String], metrics: [{ key: String, value: String }] }],
+  depoimentos: [{ name: String, position: String, company: String, content: String, rating: Number, avatar: String }],
+  footer: {
+    text: String,
+    contacts: [{ type: { type: String }, value: String }],
+    socials: [{ name: String, href: String }],
+    services: [String],
+    companyLinks: [String]
+  }
+});
+const SiteData = mongoose.model('SiteData', siteDataSchema);
+
+// Middleware para garantir que sempre exista um documento de dados do site
+async function ensureSiteData() {
+  let doc = await SiteData.findOne();
+  if (!doc) {
+    doc = await SiteData.create({});
+  }
+  return doc;
+}
+
+// GET todas as seções
+app.get('/api', async (req, res) => {
+  const doc = await ensureSiteData();
+  res.json(doc);
+});
+
+// PUT todas as seções
+app.put('/api', async (req, res) => {
+  let doc = await ensureSiteData();
+  Object.assign(doc, req.body);
+  await doc.save();
+  res.json({ success: true });
+});
+
+// GET seção específica
+app.get('/api/:section', async (req, res) => {
+  const doc = await ensureSiteData();
+  const section = req.params.section;
+  if (doc[section] !== undefined) {
+    res.json(doc[section]);
+  } else {
+    res.status(404).json({ error: 'Seção não encontrada' });
+  }
+});
+
+// PUT seção específica
+app.put('/api/:section', async (req, res) => {
+  let doc = await ensureSiteData();
+  const section = req.params.section;
+  if (doc[section] !== undefined) {
+    doc[section] = req.body;
+    await doc.save();
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Seção não encontrada' });
+  }
+});
 
 // Rota para criar admin (primeiro acesso)
 app.post('/api/admins', async (req, res) => {
