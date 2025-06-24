@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -32,9 +33,10 @@ function authMiddleware(req, res, next) {
 app.use(authMiddleware);
 
 // Corrigir conexão com MongoDB usando variável de ambiente e nome do banco
-const mongoUrl = process.env.MONGO_PUBLIC_URL?.endsWith('/railway')
-  ? process.env.MONGO_PUBLIC_URL
-  : process.env.MONGO_PUBLIC_URL + '/railway';
+if (!process.env.MONGO_PUBLIC_URL || !process.env.MONGO_PUBLIC_URL.startsWith('mongodb://')) {
+  throw new Error('A variável MONGO_PUBLIC_URL não está definida corretamente. Ela deve começar com "mongodb://".');
+}
+const mongoUrl = process.env.MONGO_PUBLIC_URL;
 
 mongoose.connect(mongoUrl);
 
