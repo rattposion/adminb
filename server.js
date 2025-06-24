@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const { Low, JSONFile } = require('lowdb');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -101,11 +102,39 @@ app.put('/api', async (req, res) => {
   res.json({ success: true });
 });
 
-// Rota de login
-app.post('/api/login', (req, res) => {
+// Conexão com MongoDB Railway
+mongoose.connect('mongodb://mongo:SVzgKbblZZglrtBqcIvOaxUkXdGoakEj@metro.proxy.rlwy.net:15495/admins', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const userSchema = new mongoose.Schema({
+  user: { type: String, required: true, unique: true },
+  pass: { type: String, required: true },
+  role: { type: String, default: 'admin' }
+});
+const User = mongoose.model('User', userSchema);
+
+// Rota para criar admin (primeiro acesso)
+app.post('/api/admins', async (req, res) => {
   const { user, pass } = req.body;
-  if (user === ADMIN_USER && pass === ADMIN_PASS) {
-    const token = jwt.sign({ user }, SECRET, { expiresIn: '2h' });
+  if (!user || !pass) return res.status(400).json({ error: 'Usuário e senha obrigatórios' });
+  try {
+    const exists = await User.findOne({ user });
+    if (exists) return res.status(409).json({ error: 'Usuário já existe' });
+    const newUser = await User.create({ user, pass });
+    res.json({ success: true, user: newUser.user });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao criar admin' });
+  }
+});
+
+// Rota de login usando MongoDB
+app.post('/api/login', async (req, res) => {
+  const { user, pass } = req.body;
+  const found = await User.findOne({ user, pass });
+  if (found) {
+    const token = jwt.sign({ user: found.user, role: found.role }, SECRET, { expiresIn: '2h' });
     res.json({ token });
   } else {
     res.status(401).json({ error: 'Usuário ou senha inválidos' });
