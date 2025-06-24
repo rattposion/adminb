@@ -1,0 +1,15 @@
+{
+  "header": { "logo": "", "titulo": "", "links": [{ "label": "", "url": "" }] },
+  "hero": { "title": "", "subtitle": "", "stats": [{ "number": "", "label": "" }] },
+  "sobre": { "title": "", "paragraphs": [""], "features": [{ "title": "", "description": "" }] },
+  "servicos": [{ "title": "", "description": "", "features": [""] }],
+  "projetos": [{ "title": "", "description": "", "image": "", "tags": [""], "metrics": [{ "key": "", "value": "" }] }],
+  "depoimentos": [{ "name": "", "position": "", "company": "", "content": "", "rating": 5, "avatar": "" }],
+  "footer": {
+    "text": "",
+    "contacts": [ { "type": "email", "value": "" }, { "type": "phone", "value": "" }, { "type": "address", "value": "" } ],
+    "socials": [{ "name": "", "href": "" }],
+    "services": [""],
+    "companyLinks": [""]
+  }
+} 
