@@ -31,11 +31,12 @@ function authMiddleware(req, res, next) {
 
 app.use(authMiddleware);
 
-// Conexão com MongoDB Railway
-mongoose.connect('mongodb://mongo:SVzgKbblZZglrtBqcIvOaxUkXdGoakEj@metro.proxy.rlwy.net:15495/admins', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// Corrigir conexão com MongoDB usando variável de ambiente e nome do banco
+const mongoUrl = process.env.MONGO_PUBLIC_URL?.endsWith('/railway')
+  ? process.env.MONGO_PUBLIC_URL
+  : process.env.MONGO_PUBLIC_URL + '/railway';
+
+mongoose.connect(mongoUrl);
 
 const userSchema = new mongoose.Schema({
   user: { type: String, required: true, unique: true },
